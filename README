@@ -1,0 +1,5 @@
+This is a ImageJ plugin that controls a DLP illumination system.
+
+It requires the DLPJava.dll library which is a wrapper of the native DLP driver, PortabilityLayer.dll.
+
+ 
