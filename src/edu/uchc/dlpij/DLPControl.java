@@ -23,7 +23,7 @@ public class DLPControl {
 	final static byte [] whitePattern_ = new byte[XGASIZE];
 
 	double t11, t12, t13, t21, t22, t23;
-	
+
 	double scalex_ = 2.0;
 	double scaley_ = 2.0;
 	double offsetx_ = - 285;
@@ -37,28 +37,28 @@ public class DLPControl {
 	final static String ROTATION_KEY = "Rotation";
 
 	static {
-//		DLPJava.InitPortabilityLayer((short)0,(short)0, new DLPJava.OutputCallback() {
-//
-//			@Override
-//			public void OnOutput(String s) {
-//				IJ.log("DLP: " + s);
-//
-//			}
-//		});
+		//		DLPJava.InitPortabilityLayer((short)0,(short)0, new DLPJava.OutputCallback() {
+		//
+		//			@Override
+		//			public void OnOutput(String s) {
+		//				IJ.log("DLP: " + s);
+		//
+		//			}
+		//		});
 
 		DLPJava.InitSimple((short)0,(short)0);
 
 		Arrays.fill(whitePattern_, (byte)0xff);
 		Arrays.fill(blackPattern_, (byte) 0);
 	}
-	
+
 	public static int getNumberOfDevices() {
 		return Misc.GetTotalNumberOfUSBDevicesConnected();
 	}
-	
+
 	public DLPControl(int deviceNum, int loglevel) throws IllegalArgumentException {
 		numOfDevices_ = getNumberOfDevices();
-		
+
 		if (deviceNum >= numOfDevices_) {
 			throw(new IllegalArgumentException("Wrong device number.")); 
 		}
@@ -68,14 +68,14 @@ public class DLPControl {
 		DLPJava.ChangeLogLevel((short) loglevel);
 
 		Preferences pref = Preferences.userNodeForPackage(DLPControl.class);
-		pref = pref.node(DLPControl.class.getName());
-		
+		//pref = pref.node(DLPControl.class.getName());
+
 		scalex_ = pref.getDouble(SCALEX_KEY + deviceNum, 2.0);
 		scaley_ = pref.getDouble(SCALEY_KEY + deviceNum, 2.0);
 		offsetx_ = pref.getDouble(OFFSETX_KEY + deviceNum, -285);
 		offsety_ = pref.getDouble(OFFSETY_KEY + deviceNum, 240);
 		rotation_ = pref.getDouble(ROTATION_KEY + deviceNum, 90);
-		
+
 		calculateMatrix();
 	}
 
@@ -84,7 +84,7 @@ public class DLPControl {
 		dx = t11 * x + t12 * y + t13;
 		return (int) Math.round(dx);
 	}
-	
+
 	private int transformY(int x, int y) {
 		double dy;
 		dy = t21 * x + t22 * y + t23;
@@ -92,13 +92,13 @@ public class DLPControl {
 	}
 
 	private void calculateMatrix() {
-				
+
 		double rotation = rotation_ * Math.PI / 180.0; 
-			
- 		t11 = scalex_ * Math.cos(rotation);
+
+		t11 = scalex_ * Math.cos(rotation);
 		t12 = - scaley_ * Math.sin(rotation);
 		t21 = scalex_ * Math.sin(rotation);
-		t22 = scaley_ * Math.cos(rotation_);
+		t22 = scaley_ * Math.cos(rotation);
 		t13 = (XGAWIDTH - t11 * XGAWIDTH - t12 * XGAHEIGHT) / 2 + offsetx_;  //keep central symmetry
 		t23 = (XGAHEIGHT - t21 * XGAWIDTH - t22 * XGAHEIGHT) / 2 + offsety_;
 	}
@@ -112,7 +112,7 @@ public class DLPControl {
 	public void shutDown() {
 		Display.ParkDMD();
 	}
-	
+
 	public void displayPattern() {
 		Display.DisplayPatternManualForceFirstPattern();
 	}
@@ -125,12 +125,12 @@ public class DLPControl {
 		setPattern(whitePattern_);
 		displayPattern();
 	}
-	
+
 	public void turnFullyOff() {
 		setPattern(blackPattern_);
 		displayPattern();
 	}
-	
+
 	private void setPatternToXGABinaryImage(ByteProcessor img) {
 		byte [] bitData = new byte[XGASIZE];
 		int bitDataIndex = 0;
@@ -165,12 +165,12 @@ public class DLPControl {
 		setPattern(bitData);
 
 	}
-	
-	 public byte [] getBitdataFromROI (Roi roi) {
+
+	public byte [] getBitdataFromROI (Roi roi) {
 		byte [] bitData = new byte[XGASIZE];
 		int bitDataIndex = 0;
 		//ImageProcessor img = new ByteProcessor(1024,768);
-		
+
 		for (int y = 0; y < XGAHEIGHT; y++) {
 			for (int x = 0; x < XGAWIDTH; x += 8) {
 				int bitValue = 0;
@@ -191,45 +191,45 @@ public class DLPControl {
 		}
 		//ImagePlus newImp = new ImagePlus("mask",img);;
 		//newImp.show();
-		
+
 		return bitData;
 	}
-	
+
 	public void setTransformationMatrix(double scalex, double scaley, double rotation, double offsetx, double offsety) {
 		scalex_ = scalex;
 		scaley_ = scaley;
 		offsetx_ = offsetx;
 		offsety_ = offsety;
 		rotation_ = rotation;
-		
+
 		Preferences pref = Preferences.userNodeForPackage(DLPControl.class);
-		pref = pref.node(DLPControl.class.getName());
-		
-		pref.putDouble(OFFSETX_KEY, offsetx);
-		pref.putDouble(OFFSETY_KEY, offsety);
-		pref.putDouble(SCALEX_KEY, scalex);
-		pref.putDouble(OFFSETY_KEY, offsety);
-		pref.putDouble(ROTATION_KEY, rotation);
-		
+		//pref = pref.node(DLPControl.class.getName());
+
+		pref.putDouble(OFFSETX_KEY + deviceNum_, offsetx);
+		pref.putDouble(OFFSETY_KEY + deviceNum_, offsety);
+		pref.putDouble(SCALEX_KEY + deviceNum_, scalex);
+		pref.putDouble(OFFSETY_KEY + deviceNum_, offsety);
+		pref.putDouble(ROTATION_KEY + deviceNum_, rotation);
+
 		calculateMatrix();
 	}
-	
+
 	public double getOffsetX() {
 		return offsetx_;
 	}
-	
+
 	public double getOffsetY() {
 		return offsety_;
 	}
-	
+
 	public double getScaleX() {
 		return scalex_;
 	}
-	
+
 	public double getScaleY() {
 		return scaley_;
 	}
-	
+
 	public double getRotation() {
 		return rotation_;
 	}

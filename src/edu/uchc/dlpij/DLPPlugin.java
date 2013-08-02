@@ -13,8 +13,9 @@ import ij.gui.DialogListener;
 import javax.swing.UIManager;
 
 public class DLPPlugin implements PlugIn {
-	boolean deviceExist_ = false;
-	DLPControl ctl;
+	static boolean deviceExist_ = false;
+	static DLPControl ctl_ = null;
+	static Roi roi_ = null;
 	
 	@Override
 	public void run(String cmd) {
@@ -25,12 +26,14 @@ public class DLPPlugin implements PlugIn {
 		}
 		
 		if (cmd.equals("black")) {
-			ctl.turnFullyOff();
+			ctl_.turnFullyOff();
+			roi_ = null;
 			//DLPControl.displayPattern();
 			return;
 		}
 		if (cmd.equals("white")) {
-			ctl.turnFullyOn();
+			ctl_.turnFullyOn();
+			roi_ = null;
 			//DLPControl.displayPattern();
 			return;
 		}			
@@ -40,12 +43,12 @@ public class DLPPlugin implements PlugIn {
 			ImagePlus imp = WindowManager.getCurrentImage();
 			if (imp == null) 
 				return;
-			Roi roi = imp.getRoi();
+			roi_ = imp.getRoi();
 
-			if (roi == null) {
+			if (roi_ == null) {
 				IJ.showMessage("No ROI in current image");
 			} else {
-				ctl.setPatternToROI(roi);
+				ctl_.setPatternToROI(roi_);
 			}
 			
 			return;
@@ -60,11 +63,11 @@ public class DLPPlugin implements PlugIn {
 	private void doCalibration() {
 		GenericDialog dlg = new GenericDialog("DLP calibration");
 		
-		double xoffset = ctl.getOffsetX();
-		double yoffset = ctl.getOffsetY();
-		double xscale = ctl.getScaleX();
-		double yscale = ctl.getScaleY();
-		double rot = ctl.getRotation();
+		double xoffset = ctl_.getOffsetX();
+		double yoffset = ctl_.getOffsetY();
+		double xscale = ctl_.getScaleX();
+		double yscale = ctl_.getScaleY();
+		double rot = ctl_.getRotation();
 		
 		dlg.addSlider("XOffset", -512, 512, - xoffset);
 		dlg.addSlider("YOffset", -512, 512, - yoffset);
@@ -80,18 +83,26 @@ public class DLPPlugin implements PlugIn {
 				double newXScale= 100.0 / dlg.getNextNumber();
 				double newYScale = 100.0 / dlg.getNextNumber();
 				double newRot = - dlg.getNextNumber();
-
-				ctl.setTransformationMatrix(newXScale, newYScale, newRot, newXOff, newYOff);				
 				
+				ctl_.setTransformationMatrix(newXScale, newYScale, newRot, newXOff, newYOff);
+				
+				IJ.log(String.format("New matrix: %.2f %.2f %.2f   %.2f %.2f %.2f",
+						ctl_.t11, ctl_.t12, ctl_.t13, ctl_.t21, ctl_.t22, ctl_.t23));
+
+				
+				if (roi_ != null) {
+					//IJ.log("Set New ROI");
+					ctl_.setPatternToROI(roi_);
+				}
 				return true;
 			}
 		});
 
 		dlg.showDialog();
 		
-		if (! dlg.wasOKed()) {
-			ctl.setTransformationMatrix(xscale, yscale, rot, xoffset, yoffset); // restore old values
-		}
+		if (dlg.wasCanceled()) {
+			ctl_.setTransformationMatrix(xscale, yscale, rot, xoffset, yoffset); // restore old values
+		} 
 	}
 	
 	public DLPPlugin() {
@@ -102,10 +113,12 @@ public class DLPPlugin implements PlugIn {
 			return;
 		}
 
-		if (DLPControl.getNumberOfDevices() > 0) {
-			ctl = new DLPControl(0, 2);
-			ctl.startUp();
-			deviceExist_ = true;
+		if (ctl_ == null) {
+			if (DLPControl.getNumberOfDevices() > 0) {
+				ctl_ = new DLPControl(0, 2);
+				ctl_.startUp();
+				deviceExist_ = true;
+			}
 		}
 	}
 
